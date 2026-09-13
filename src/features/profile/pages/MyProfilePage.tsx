@@ -33,6 +33,10 @@ import { useUserCapabilities } from "../../../components/permissions/UserCapabil
 import { useMyProfileReels } from "../hooks/useMyProfileReels";
 import ProfileReelGridSkeleton from "../components/ProfileReelGridSkeleton";
 import ProfileReelGrid from "../components/ProfileReelGrid";
+import { Reel } from "../../reels/types/reel.types";
+import ReelCommentModal from "../../reels/components/ReelCommentModal";
+import ViewReelDrawer from "../../reels/components/ViewReelDrawer";
+import { useLikedReels } from "../../reels/hooks/useLikedReels";
 
 type ProfileContentType = "recipes" | "reels"
 
@@ -49,6 +53,7 @@ export default function MyProfilePage() {
     uploadAvatarImage,
     isProfileSaving,
     saveProfile,
+    updateViewModePreference,
   } = useMyProfile()
 
   const {
@@ -64,6 +69,7 @@ export default function MyProfilePage() {
 
   const {
     reels,
+    setReels,
     isLoading: isReelsLoading,
     error: reelsError,
   } = useMyProfileReels(userId)
@@ -72,9 +78,20 @@ export default function MyProfilePage() {
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null)
   const [isRecipeDrawerLoading, setIsRecipeDrawerLoading] = useState(false)
   
+  const [selectedReel, setSelectedReel] = useState<Reel | null>(null)
+  const [commentsReel, setCommentsReel] = useState<Reel | null>(null)
+  const {likedReelIds} = useLikedReels()
+  
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null)
   const [isRecipeEditLoading, setIsRecipeEditLoading] = useState(false)
-  const isRecipeOverlayOpen = Boolean(selectedRecipe || editingRecipe || isRecipeDrawerLoading || isRecipeEditLoading)
+  const isProfileOverlayOpen = Boolean(
+    selectedRecipe ||
+    editingRecipe ||
+    isRecipeDrawerLoading ||
+    isRecipeEditLoading ||
+    selectedReel ||
+    commentsReel
+  )
   
   const { showSnackbar } = useSnackbar()
   const {restrictions} = useUserCapabilities()
@@ -213,6 +230,12 @@ export default function MyProfilePage() {
       profileImage: profile.profileImage || "",
     }
   }, [userId, profile])
+  
+  useEffect(() => {
+    if (!profile?.preferences?.profileViewMode) return
+
+    setViewMode(profile.preferences.profileViewMode)
+  }, [profile?.preferences?.profileViewMode])
 
   useEffect(() => {
     if (!userId) {
@@ -355,6 +378,22 @@ export default function MyProfilePage() {
     setIsRecipeEditLoading(false)
   }
 
+  const handleViewModeChange = async (nextViewMode: ProfileRecipeViewMode) => {
+    if (nextViewMode === viewMode) return
+    const previousViewMode = viewMode
+
+    setViewMode(nextViewMode)
+
+    try {
+      await updateViewModePreference(nextViewMode)
+    } catch (error) {
+      console.error("Failed to save profile view preference:", error)
+
+      setViewMode(previousViewMode)
+      showSnackbar("Failed to save view preference.", "error")
+    }
+  }
+
   const handleRatingStateChange = useCallback((recipeId: string, stats: {
     averageRating: number
     ratingsCount: number
@@ -466,6 +505,37 @@ export default function MyProfilePage() {
       }
     })
   }, [setRecipes, setSavedRecipes])
+
+  const handleReelLikeStateChange = useCallback((
+    reelId: string,
+    _isLiked: boolean,
+    likesCount: number
+  ) => {
+    const normalizedLikesCount = Number(likesCount || 0)
+
+    setReels((prev) => prev.map((reel) =>
+      reel.reelId === reelId 
+        ? {
+          ...reel,
+          stats: {
+            ...reel.stats,
+            likesCount: normalizedLikesCount,
+          }
+        } : reel
+    ))
+
+    setSelectedReel((prev) => {
+      if (!prev || prev.reelId !== reelId) return prev
+
+      return {
+        ...prev,
+        stats: {
+          ...prev.stats,
+          likesCount: normalizedLikesCount,
+        }
+      }
+    })
+  }, [setReels])
 
   const handleViewDrawerRecipeEdit = async (recipe: Recipe) => {
     const recipeId = recipe.recipeId || recipe.id
@@ -663,7 +733,7 @@ export default function MyProfilePage() {
   }, [recipeIdFromUrl])
 
   useEffect(() => {
-    if (!isRecipeOverlayOpen) return
+    if (!isProfileOverlayOpen) return
 
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
@@ -671,7 +741,7 @@ export default function MyProfilePage() {
     return () => {
       document.body.style.overflow = previousOverflow
     }
-  }, [isRecipeOverlayOpen])
+  }, [isProfileOverlayOpen])
 
   const handleCloseRecipeDrawer = () => {
     setSelectedRecipeId(null)
@@ -805,7 +875,7 @@ export default function MyProfilePage() {
                 category={category}
                 onCategoryChange={setCategory}
                 viewMode={viewMode}
-                onViewModeChange={setViewMode}
+                onViewModeChange={handleViewModeChange}
                 categories={categories}
               />
             </div>
@@ -817,7 +887,7 @@ export default function MyProfilePage() {
               )
             ) : (
               (isReelsLoading || isSearching) && (
-                <ProfileReelGridSkeleton count={10} />
+                <ProfileReelGridSkeleton viewMode={viewMode} count={10} />
               )
             )}
 
@@ -859,7 +929,23 @@ export default function MyProfilePage() {
               )}
 
               {contentType === "reels" && !isReelsLoading && !isSearching && !reelsError && (
-                <ProfileReelGrid reels={visibleReels} />
+                <ProfileReelGrid 
+                  reels={visibleReels} 
+                  viewMode={viewMode}
+                  currentUserId={userId}
+                  onReelClick={(reel) => {
+                    setSelectedReel(reel)
+                  }}
+                  onReelEdit={(reel) => {
+                    console.log("Edit reel:", reel)
+                  }}
+                  onReelDelete={(reel) => {
+                    console.log("Delete reel:", reel)
+                  }}
+                  onReelShare={(reel) => {
+                    console.log("Share reel:", reel)
+                  }}
+                />
               )}
             </motion.div>
           </AnimatePresence>
@@ -984,6 +1070,46 @@ export default function MyProfilePage() {
                   />
                 ) : null}
               </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {selectedReel && (
+              <motion.div
+                className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 p-5 backdrop-blur-[2px]"
+                initial={{opacity: 0}}
+                animate={{opacity: 1}}
+                exit={{opacity: 0}}
+                transition={{duration: 0.2, ease: "easeOut"}}
+                onClick={(event) => {
+                  if (event.target === event.currentTarget) {
+                    setSelectedReel(null)
+                  }
+                }}
+              >
+                <ViewReelDrawer
+                  reel={selectedReel}
+                  currentUserId={userId}
+                  isLiked={likedReelIds.includes(selectedReel.reelId)}
+                  onClose={() => setSelectedReel(null)}
+                  onCommentsClick={(reel) => {
+                    setCommentsReel(reel)
+                  }}
+                  onShareClick={(reel) => {
+                    console.log("Share reel:", reel)
+                  }}
+                  onLikeStateChange={handleReelLikeStateChange}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {commentsReel && (
+              <ReelCommentModal
+                reel={commentsReel}
+                onClose={() => setCommentsReel(null)}
+              />
             )}
           </AnimatePresence>
 

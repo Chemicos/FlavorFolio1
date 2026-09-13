@@ -210,7 +210,7 @@ export default function RecipeGridCard({
               {formatDuration(recipe.durationMinutes)}
             </p>
 
-            <div className="mt-4 flex items-center pt-3">
+            <div className="mt-3 flex items-center justify-between border-t border-white/15 pt-2 text-xs text-white/75">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1.5 text-[var(--accent)]">
                   <StarRoundedIcon sx={{ fontSize: 18 }} />

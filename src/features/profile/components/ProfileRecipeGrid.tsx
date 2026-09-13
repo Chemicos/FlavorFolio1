@@ -456,7 +456,7 @@ export default function ProfileRecipeGrid({
 
     if (viewMode === "list") {
         return (
-        <section className="my-6 grid gap-2">
+        <section className="mb-6 grid gap-2">
             {recipes.map((recipe) => (
             <ProfileRecipeListCard
                 key={recipe.id}
@@ -473,7 +473,7 @@ export default function ProfileRecipeGrid({
         )
     }
   return (
-    <section className="my-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+    <section className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
       {recipes.map((recipe) => (
         <ProfileRecipeGridCard
           key={recipe.id}

@@ -167,7 +167,7 @@ function ProfileRecipeListCardSkeleton() {
 export default function ProfileRecipeGridSkeleton({viewMode, count = 8}: ProfileRecipeGridSkeletonProps) {
     if (viewMode === "list") {
         return (
-            <section className="mt-6 grid gap-2">
+            <section className="mb-6 grid gap-2">
                 {Array.from({ length: Math.min(count, 6) }).map((_, index) => (
                     <ProfileRecipeListCardSkeleton key={index} />
                 ))}
@@ -176,7 +176,7 @@ export default function ProfileRecipeGridSkeleton({viewMode, count = 8}: Profile
     }
 
   return (
-    <section className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+    <section className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
       {Array.from({ length: count }).map((_, index) => (
         <ProfileRecipeGridCardSkeleton key={index} />
       ))}

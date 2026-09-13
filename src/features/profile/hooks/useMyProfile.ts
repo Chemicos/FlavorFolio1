@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { fetchMyProfile, MyProfileData, subscribeToMyProfile, updateMyProfile, UpdateMyProfilePayload, updateProfileAvatarImage, updateProfileBannerImage } from "../services/profile.service"
+import { fetchMyProfile, MyProfileData, ProfileViewMode, subscribeToMyProfile, updateMyProfile, UpdateMyProfilePayload, updateProfileAvatarImage, updateProfileBannerImage, updateProfileViewMode } from "../services/profile.service"
 import { getAuth, onAuthStateChanged } from "firebase/auth"
 
 function formatJoinedLabel(createdAt?: MyProfileData["createdAt"]) {
@@ -98,6 +98,12 @@ export function useMyProfile() {
         setIsBannerUploading(false)
         }
     }
+    
+    const updateViewModePreference = async (viewMode: ProfileViewMode) => {
+        if (!userId) return 
+
+        await updateProfileViewMode({userId, viewMode})
+    }
 
     const displayProfile = useMemo(() => {
         if (!profile) return null
@@ -125,5 +131,6 @@ export function useMyProfile() {
         uploadAvatarImage,
         isProfileSaving,
         saveProfile,
+        updateViewModePreference,
     }
 }

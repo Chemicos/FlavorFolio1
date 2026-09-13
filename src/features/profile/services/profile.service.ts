@@ -9,6 +9,12 @@ export interface UserRestrictions {
   canPostReels: boolean
   canComment: boolean
 }
+export type ProfileViewMode = "grid" | "list"
+export interface UserPreferences {
+  language: string
+  theme: string
+  profileViewMode: ProfileViewMode
+}
 
 export interface MyProfileData {
   uid: string
@@ -25,6 +31,8 @@ export interface MyProfileData {
     profileVisibility: ProfileVisibility
     showInSearch: boolean
   }
+
+  preferences: UserPreferences
 
   createdAt?: {
     seconds: number
@@ -49,6 +57,7 @@ export interface UpdateMyProfilePayload {
   website: string
 }
 
+
 export function normalizeUserRestrictions(
   value: any
 ): UserRestrictions {
@@ -61,6 +70,14 @@ export function normalizeUserRestrictions(
 
     canComment:
       value?.canComment !== false,
+  }
+}
+
+export function normalizeUserPreferences(value: any): UserPreferences {
+  return {
+    language: value?.language || "en",
+    theme: value?.theme || "dark",
+    profileViewMode: value?.profileViewMode === "list" ? "list" : "grid"
   }
 }
 
@@ -177,6 +194,22 @@ async function propagateUserProfileIdentity({
   }
 }
 
+export async function updateProfileViewMode({
+  userId,
+  viewMode
+}: {
+  userId: string
+  viewMode: ProfileViewMode
+}) {
+  if (!userId) throw new Error("User id is required")
+  const userRef = doc(db, "users", userId)
+
+  await updateDoc(userRef, {
+    "preferences.profileViewMode": viewMode,
+    updatedAt: serverTimestamp()
+  })
+}
+
 export async function updateProfileAvatarImage({
   userId,
   file,
@@ -254,6 +287,8 @@ export function subscribeToMyProfile(
           profileVisibility: data.privacy?.profileVisibility || "public",
           showInSearch: data.privacy?.showInSearch ?? true,
         },
+
+        preferences: normalizeUserPreferences(data.preferences),
 
         stats: {
           recipesCount: Number(data.stats?.recipesCount || 0),
@@ -351,6 +386,8 @@ export async function fetchMyProfile(userId: string): Promise<MyProfileData> {
       profileVisibility: data.privacy?.profileVisibility || "public",
       showInSearch: data.privacy?.showInSearch ?? true,
     },
+
+    preferences: normalizeUserPreferences(data.preferences),
 
     stats: {
       recipesCount: Number(data.stats?.recipesCount || 0),

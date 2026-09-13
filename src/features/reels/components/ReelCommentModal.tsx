@@ -123,10 +123,10 @@ export default function ReelCommentModal({
         exit={{ opacity: 0 }}
         onClick={onClose}
         aria-label="Close comments"
-        className="absolute inset-0 z-[70] cursor-default bg-[var(--overlay)] backdrop-blur-[1px]"
+        className="fixed inset-0 z-[90] cursor-default bg-[var(--overlay)] backdrop-blur-[1px]"
       />
 
-      <div className="absolute z-[80] right-4 top-4 bottom-4 w-[min(420px,calc(100vw-32px))] xl:left-[calc(50%+231px)] xl:right-auto xl:top-1/2 xl:bottom-auto xl:h-[min(820px,calc(100%_-_3rem))] xl:w-[420px] xl:-translate-y-1/2">
+      <div className="fixed z-[100] right-4 top-4 bottom-4 w-[min(420px,calc(100vw-32px))] xl:left-[calc(50%+231px)] xl:right-auto xl:top-1/2 xl:bottom-auto xl:h-[min(820px,calc(100%_-_3rem))] xl:w-[420px] xl:-translate-y-1/2">
         <motion.aside
           initial={{opacity: 0,x: 28,scale: 0.98,}}
           animate={{opacity: 1, x: 0, scale: 1,}}
